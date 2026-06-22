@@ -214,11 +214,13 @@ formulaire_scan = html.Div(
                 dcc.Upload(
                     id="upload-dossier",
                     children=html.Div([
-                        svg_inline(ICONE_UPLOAD),
-                        html.Div(id="txt-upload-zone", className="upload-zone-text"),
+                       svg_inline(ICONE_UPLOAD),
+                       html.Div(id="txt-upload-zone", className="upload-zone-text"),
                     ]),
                     className="upload-zone",
                     multiple=True,
+                    style={"cursor": "pointer"},
+                    inputProps={"webkitdirectory": "true"}  # ✅ IMPORTANT
                 ),
                 html.Div(id="txt-upload-hint", className="scan-hint"),
                 html.Div(id="upload-fichiers-resume", className="upload-resume"),
