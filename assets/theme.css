@@ -485,6 +485,12 @@ img, svg { max-width: 100%; }
     white-space: nowrap;
 }
 
+
+.graph {
+    height: 350px;
+}
+
+
 .hotspot-table tbody td {
     padding: 11px 12px;
     border-bottom: 1px solid var(--border-color);
