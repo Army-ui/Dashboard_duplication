@@ -206,7 +206,7 @@ formulaire_scan = html.Div(
             ],
         ),
 
-      # ── Mode upload (caché par défaut) ───────────────────────────────
+       # ── Mode upload (caché par défaut) ───────────────────────────────
       html.Div(
           id="bloc-mode-upload",
           style={"display": "none"},
