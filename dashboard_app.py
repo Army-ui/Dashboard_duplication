@@ -196,7 +196,7 @@ formulaire_scan = html.Div(
             ],
         ),
 
-        # ── Mode chemin serveur ──────────────────────────────────────────
+    # ── Mode chemin serveur ──────────────────────────────────────────
         html.Div(
             id="bloc-mode-path",
             children=[
@@ -212,29 +212,27 @@ formulaire_scan = html.Div(
           style={"display": "none"},
           children=[
 
-             # Input caché pour sélection de dossier
              html.Input(
-                  id="upload-dossier",
-                  type="file",
-                  multiple=True,
-                  webkitdirectory="true",   # ✅ important : string
-                  style={"display": "none"}
-             ),
+                 id="upload-dossier",
+                 type="file",
+                 multiple=True,
+                 style={"display": "none"},
+                 **{"webkitdirectory": ""}   # ✅ correct
+            ),
 
-            # Zone cliquable
             html.Label(
-                  [
-                      svg_inline(ICONE_UPLOAD),
-                      html.Div(id="txt-upload-zone", className="upload-zone-text"),
-                  ],
-                      className="upload-zone",
-                      htmlFor="upload-dossier"
-           ),
+                 [
+                     svg_inline(ICONE_UPLOAD),
+                     html.Div(id="txt-upload-zone", className="upload-zone-text"),
+                 ],
+                 className="upload-zone",
+                 htmlFor="upload-dossier"
+             ),   
 
-           html.Div(id="txt-upload-hint", className="scan-hint"),
-           html.Div(id="upload-fichiers-resume", className="upload-resume"),
-           ],
-       ),
+              html.Div(id="txt-upload-hint", className="scan-hint"),
+              html.Div(id="upload-fichiers-resume", className="upload-resume"),
+          ],
+      ),
 
         html.Div(id="zone-erreur-scan", className="scan-error"),
 
