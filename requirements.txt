@@ -1,0 +1,29 @@
+# ============================================================
+# Dépendances du Tableau de bord de Détection de Doublons
+# Installation : pip install -r requirements.txt
+# ============================================================
+
+# --- Framework web / dashboard ---
+dash>=2.17.0
+plotly>=5.22.0
+
+# --- Tâche de fond + barre de progression (Background Callback) ---
+# DiskcacheManager : zéro infrastructure externe (pas de Redis/Celery requis)
+diskcache>=5.6.3
+
+# --- Manipulation de données ---
+pandas>=2.2.0
+numpy>=1.26.0
+
+# --- Persistance des résultats par session (format Parquet) ---
+# Requis par pandas pour to_parquet() / read_parquet() dans pipeline/orchestrateur.py
+pyarrow>=16.0.0
+
+# --- Machine learning : clustering DBSCAN + similarité cosinus (étape 4) ---
+scikit-learn>=1.4.0
+
+# --- Génération des rapports PDF téléchargeables ---
+reportlab>=4.2.0
+
+# --- Serveur de production (recommandé pour le déploiement, voir notes ci-dessous) ---
+gunicorn>=22.0.0
