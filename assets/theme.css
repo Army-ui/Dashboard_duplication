@@ -450,7 +450,7 @@ img, svg { max-width: 100%; }
     padding: 18px 20px 8px;
     box-shadow: var(--shadow-card);
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
     transition: box-shadow 0.25s ease, border-color 0.25s ease;
 }
 .chart-card:hover { box-shadow: var(--shadow-card-hover); border-color: var(--border-strong); }
