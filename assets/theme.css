@@ -281,6 +281,8 @@ img, svg { max-width: 100%; }
     padding: clamp(16px, 3vw, 28px) clamp(16px, 4vw, 40px) 48px;
     max-width: 1480px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
 }
 
 .section-title {
@@ -376,6 +378,7 @@ div[class*="-menu"] {
     display: flex; flex-wrap: wrap; gap: 18px;
     margin-bottom: 40px;
     align-items: flex-end;
+    overflow: visible !important;
     transition: box-shadow 0.25s ease;
 }
 .filter-panel:hover { box-shadow: var(--shadow-card-hover); }
@@ -448,12 +451,39 @@ div[class*="-menu"] {
 /* ============================================================
    GRILLE DE GRAPHIQUES
    ============================================================ */
+/* FORCE les graphes à rester derrière */
+.js-plotly-plot {
+    position: relative !important;
+    z-index: 0 !important;
+}
+
+/* Canvas interne Plotly */
+.js-plotly-plot .plot-container {
+    z-index: 0 !important;
+}
+
+/* SVG Plotly */
+.js-plotly-plot svg {
+    z-index: 0 !important;
+}
+
+/* Dropdown container */
+.Select, .dash-dropdown {
+    position: relative;
+    z-index: 9999 !important;
+}
+
+/* Menu dropdown */
+div[class*="-menu"] {
+    z-index: 9999 !important;
+}
 
 .chart-grid-2 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 14px;
     margin-bottom: 14px;
+    overflow: visible !important;
 }
 
 .chart-card {
