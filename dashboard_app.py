@@ -312,15 +312,15 @@ app.layout = html.Div(
                         html.Div(className="filter-panel", children=[
                             html.Div([
                                 html.Label(id="lbl-filter-depot", className="filter-label"),
-                                dcc.Dropdown(id="filtre-depot", clearable=True),
+                                dcc.Dropdown(id="filtre-depot", clearable=True, menuPortalTarget="body"),
                             ], className="filter-field"),
                             html.Div([
                                 html.Label(id="lbl-filter-unite", className="filter-label"),
-                                dcc.Dropdown(id="filtre-unite", clearable=True),
+                                dcc.Dropdown(id="filtre-unite", clearable=True, menuPortalTarget="body"),
                             ], className="filter-field"),
                             html.Div([
                                 html.Label(id="lbl-filter-type", className="filter-label"),
-                                dcc.Dropdown(id="filtre-type", value="Tous", clearable=False),
+                                dcc.Dropdown(id="filtre-type", value="Tous", clearable=False, menuPortalTarget="body"),
                             ], className="filter-field"),
                         ]),
 
