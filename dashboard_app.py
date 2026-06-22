@@ -212,7 +212,7 @@ formulaire_scan = html.Div(
             style={"display": "none"},
             children=[
 
-                html.Input(
+                dcc.Input(
                     id="upload-dossier",
                     type="file",
                     multiple=True,
