@@ -206,26 +206,35 @@ formulaire_scan = html.Div(
             ],
         ),
 
-        # ── Mode upload (caché par défaut) ───────────────────────────────
-        html.Div(
-            id="bloc-mode-upload",
-            style={"display": "none"},
-            children=[
-                dcc.Upload(
-                    id="upload-dossier",
-                    children=html.Div([
-                       svg_inline(ICONE_UPLOAD),
-                       html.Div(id="txt-upload-zone", className="upload-zone-text"),
-                    ]),
-                    className="upload-zone",
-                    multiple=True,
-                    style={"cursor": "pointer"},
-                    inputProps={"webkitdirectory": "true"}  # ✅ IMPORTANT
-                ),
-                html.Div(id="txt-upload-hint", className="scan-hint"),
-                html.Div(id="upload-fichiers-resume", className="upload-resume"),
-            ],
-        ),
+      # ── Mode upload (caché par défaut) ───────────────────────────────
+      html.Div(
+          id="bloc-mode-upload",
+          style={"display": "none"},
+          children=[
+
+             # Input caché pour sélection de dossier
+             html.Input(
+                  id="upload-dossier",
+                  type="file",
+                  multiple=True,
+                  webkitdirectory="true",   # ✅ important : string
+                  style={"display": "none"}
+             ),
+
+            # Zone cliquable
+            html.Label(
+                  [
+                      svg_inline(ICONE_UPLOAD),
+                      html.Div(id="txt-upload-zone", className="upload-zone-text"),
+                  ],
+                      className="upload-zone",
+                      htmlFor="upload-dossier"
+           ),
+
+           html.Div(id="txt-upload-hint", className="scan-hint"),
+           html.Div(id="upload-fichiers-resume", className="upload-resume"),
+           ],
+       ),
 
         html.Div(id="zone-erreur-scan", className="scan-error"),
 
