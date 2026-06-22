@@ -326,19 +326,19 @@ app.layout = html.Div(
 
                         html.Div(className="chart-grid-2", children=[
                             html.Div([en_tete_section("titre-unite", "sous-titre-unite"),
-                                      dcc.Graph(id="graphique-unite", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "100%"})],
+                                      dcc.Graph(id="graphique-unite", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "350px"})],
                                      className="chart-card"),
                             html.Div([en_tete_section("titre-depot", "sous-titre-depot"),
-                                      dcc.Graph(id="graphique-depot", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "100%"})],
+                                      dcc.Graph(id="graphique-depot", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "350px"})],
                                      className="chart-card"),
                         ]),
 
                         html.Div(className="chart-grid-2", children=[
                             html.Div([en_tete_section("titre-extension", "sous-titre-extension"),
-                                      dcc.Graph(id="graphique-extension", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "100%"})],
+                                      dcc.Graph(id="graphique-extension", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "350px"})],
                                      className="chart-card"),
                             html.Div([en_tete_section("titre-type", "sous-titre-type"),
-                                      dcc.Graph(id="graphique-type", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "100%"})],
+                                      dcc.Graph(id="graphique-type", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "350px"})],
                                      className="chart-card"),
                         ]),
 
