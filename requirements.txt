@@ -5,6 +5,7 @@
 
 # --- Framework web / dashboard ---
 dash[diskcache]>=2.17.0
+dash-uploader
 plotly>=5.22.0
 
 # --- Tâche de fond + barre de progression (Background Callback) ---
