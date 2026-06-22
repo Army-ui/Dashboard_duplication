@@ -196,7 +196,7 @@ formulaire_scan = html.Div(
             ],
         ),
 
-    # ── Mode chemin serveur ──────────────────────────────────────────
+        # ── Mode chemin serveur ──────────────────────────────────────────
         html.Div(
             id="bloc-mode-path",
             children=[
@@ -206,33 +206,33 @@ formulaire_scan = html.Div(
             ],
         ),
 
-       # ── Mode upload (caché par défaut) ───────────────────────────────
-      html.Div(
-          id="bloc-mode-upload",
-          style={"display": "none"},
-          children=[
+        # ── Mode upload (caché par défaut) ───────────────────────────────
+        html.Div(
+            id="bloc-mode-upload",
+            style={"display": "none"},
+            children=[
 
-             html.Input(
-                 id="upload-dossier",
-                 type="file",
-                 multiple=True,
-                 style={"display": "none"},
-                 **{"webkitdirectory": ""}   # ✅ correct
-            ),
+                html.Input(
+                    id="upload-dossier",
+                    type="file",
+                    multiple=True,
+                    style={"display": "none"},
+                    **{"webkitdirectory": ""}   # ✅ Correction : syntaxe React pour attribut personnalisé
+                ),
 
-            html.Label(
-                 [
-                     svg_inline(ICONE_UPLOAD),
-                     html.Div(id="txt-upload-zone", className="upload-zone-text"),
-                 ],
-                 className="upload-zone",
-                 htmlFor="upload-dossier"
-             ),   
+                html.Label(
+                    [
+                        svg_inline(ICONE_UPLOAD),
+                        html.Div(id="txt-upload-zone", className="upload-zone-text"),
+                    ],
+                    className="upload-zone",
+                    htmlFor="upload-dossier"  # ✅ Correction : htmlFor au lieu de for
+                ),
 
-              html.Div(id="txt-upload-hint", className="scan-hint"),
-              html.Div(id="upload-fichiers-resume", className="upload-resume"),
-          ],
-      ),
+                html.Div(id="txt-upload-hint", className="scan-hint"),
+                html.Div(id="upload-fichiers-resume", className="upload-resume"),
+            ],
+        ),
 
         html.Div(id="zone-erreur-scan", className="scan-error"),
 
@@ -425,7 +425,9 @@ def changer_langue(clic_fr, clic_en):
 @app.callback(Output("btn-lang-fr", "className"), Output("btn-lang-en", "className"), Input("store-langue", "data"))
 def style_boutons_langue(langue):
     base = "control-pill-btn"
-    return (base, base + " is-active") if langue == "en" else (base + " is-active", base)
+    if langue == "en":
+        return base, base + " is-active"
+    return base + " is-active", base
 
 
 @app.callback(Output("btn-theme-toggle", "children"), Input("store-theme", "data"))
