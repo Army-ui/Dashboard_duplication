@@ -362,6 +362,10 @@ div[class*="-menu"] {
     position: absolute !important;
 }
 
+/* Force le menu à être au-dessus de tout */
+.Select-menu-portal {
+    z-index: 9999 !important;
+}
 
 .filter-panel {
     background: var(--bg-card);
