@@ -8,10 +8,13 @@ from dash import (
     clientside_callback, DiskcacheManager, no_update,
 )
 
+import dash_uploader as du
+
 from i18n import t
 from pipeline.orchestrateur import (
     executer_pipeline_complet,
-    preparer_dossier_depuis_upload,
+    preparer_dossier_depuis_upload_dashuploader,
+    extraire_zip_uploade,
     charger_resultats_session,
     session_a_des_resultats,
 )
@@ -30,17 +33,26 @@ cache = diskcache.Cache(CHEMIN_CACHE)
 background_callback_manager = DiskcacheManager(cache)
 
 # =========================
-# 2. PALETTE — blanc / doré, cohérente clair & sombre
+# 1bis. DASH-UPLOADER — dossier racine où atterrissent tous les fichiers uploadés,
+#       avant traitement par le pipeline. use_upload_id=True isole chaque session
+#       dans son propre sous-dossier <UPLOAD_FOLDER_ROOT>/<upload_id>/ automatiquement.
+# =========================
+
+UPLOAD_FOLDER_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions", "_uploads_bruts")
+os.makedirs(UPLOAD_FOLDER_ROOT, exist_ok=True)
+
+# =========================
+# 2. PALETTE — bleu marine / blanc, cohérente clair & sombre
 # =========================
 
 PALETTE = {
     "light": {
-        "bg_card": "#FFFFFF", "text_primary": "#21201B", "text_secondary": "#6B6354",
-        "grid": "#EDE7D6", "navy": "#8A6A1F", "steel": "#B08A2E", "coral": "#B0552C", "teal": "#156A56",
+        "bg_card": "#FFFFFF", "text_primary": "#15212F", "text_secondary": "#56697D",
+        "grid": "#E3EAF1", "navy": "#16407A", "steel": "#2C5C9E", "coral": "#B0552C", "teal": "#156A56",
     },
     "dark": {
-        "bg_card": "#1C1A12", "text_primary": "#F3EEDF", "text_secondary": "#B6AD93",
-        "grid": "#332C18", "navy": "#D4AF52", "steel": "#D4AF52", "coral": "#DD8A5C", "teal": "#4FC2A0",
+        "bg_card": "#101824", "text_primary": "#EAF1F8", "text_secondary": "#9DB0C4",
+        "grid": "#1C2A3A", "navy": "#5B8FD0", "steel": "#5B8FD0", "coral": "#DD8A5C", "teal": "#4FC2A0",
     },
 }
 
@@ -55,6 +67,11 @@ app = Dash(
     assets_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets"),
 )
 app.title = "Duplicate Detection Dashboard"
+
+# Doit être appelé après la création de `app` et avant tout composant du.Upload.
+# use_upload_id=True → chaque upload_id (notre session_id) reçoit son propre sous-dossier,
+# garantissant l'isolation entre utilisateurs au niveau même de l'upload.
+du.configure_upload(app, UPLOAD_FOLDER_ROOT, use_upload_id=True)
 
 app.index_string = """<!DOCTYPE html>
 <html>
@@ -87,7 +104,7 @@ ICONE_LUNE = """<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
 </svg>"""
 
-ICONE_MARQUE = """<svg viewBox="0 0 24 24" fill="none" stroke="#8A6A1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+ICONE_MARQUE = """<svg viewBox="0 0 24 24" fill="none" stroke="#16407A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
 <rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7M14 17.5h7"/>
 </svg>"""
@@ -207,28 +224,16 @@ formulaire_scan = html.Div(
         ),
 
         # ── Mode upload (caché par défaut) ───────────────────────────────
+        # du.Upload (dash-uploader) gère l'upload par chunks sans limite de taille,
+        # et le drag-and-drop d'un dossier complet avec ses sous-dossiers.
+        # Le composant est injecté dynamiquement une fois le session_id connu
+        # (voir callback section 10bis), car son upload_id doit correspondre
+        # exactement au session_id pour garantir l'isolation entre utilisateurs.
         html.Div(
             id="bloc-mode-upload",
             style={"display": "none"},
             children=[
-
-                dcc.Input(
-                    id="upload-dossier",
-                    type="file",
-                    multiple=True,
-                    style={"display": "none"},
-                    **{"webkitdirectory": ""}   # ✅ Correction : syntaxe React pour attribut personnalisé
-                ),
-
-                html.Label(
-                    [
-                        svg_inline(ICONE_UPLOAD),
-                        html.Div(id="txt-upload-zone", className="upload-zone-text"),
-                    ],
-                    className="upload-zone",
-                    htmlFor="upload-dossier"  # ✅ Correction : htmlFor au lieu de for
-                ),
-
+                html.Div(id="conteneur-du-upload"),
                 html.Div(id="txt-upload-hint", className="scan-hint"),
                 html.Div(id="upload-fichiers-resume", className="upload-resume"),
             ],
@@ -239,7 +244,7 @@ formulaire_scan = html.Div(
         html.Div(
             className="scan-actions",
             children=[
-                html.Button(id="btn-lancer-scan", className="btn-primary-gold"),
+                html.Button(id="btn-lancer-scan", className="btn-primary-navy"),
             ],
         ),
 
@@ -275,7 +280,6 @@ app.layout = html.Div(
         dcc.Store(id="store-session-id", storage_type="session", data=None),
         dcc.Store(id="store-mode-scan", storage_type="memory", data="path"),
         dcc.Store(id="store-pipeline-termine", storage_type="memory", data=False),
-        dcc.Store(id="store-upload-data", storage_type="memory", data=None),
 
         html.Div(
             className="topbar",
@@ -335,19 +339,19 @@ app.layout = html.Div(
 
                         html.Div(className="chart-grid-2", children=[
                             html.Div([en_tete_section("titre-unite", "sous-titre-unite"),
-                                      dcc.Graph(id="graphique-unite", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "350px"})],
+                                      dcc.Graph(id="graphique-unite", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "100%"})],
                                      className="chart-card"),
                             html.Div([en_tete_section("titre-depot", "sous-titre-depot"),
-                                      dcc.Graph(id="graphique-depot", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "350px"})],
+                                      dcc.Graph(id="graphique-depot", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "100%"})],
                                      className="chart-card"),
                         ]),
 
                         html.Div(className="chart-grid-2", children=[
                             html.Div([en_tete_section("titre-extension", "sous-titre-extension"),
-                                      dcc.Graph(id="graphique-extension", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "350px"})],
+                                      dcc.Graph(id="graphique-extension", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "100%"})],
                                      className="chart-card"),
                             html.Div([en_tete_section("titre-type", "sous-titre-type"),
-                                      dcc.Graph(id="graphique-type", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "350px"})],
+                                      dcc.Graph(id="graphique-type", config={"displayModeBar": False, "responsive": True}, style={"width": "100%", "height": "100%"})],
                                      className="chart-card"),
                         ]),
 
@@ -425,9 +429,7 @@ def changer_langue(clic_fr, clic_en):
 @app.callback(Output("btn-lang-fr", "className"), Output("btn-lang-en", "className"), Input("store-langue", "data"))
 def style_boutons_langue(langue):
     base = "control-pill-btn"
-    if langue == "en":
-        return base, base + " is-active"
-    return base + " is-active", base
+    return (base, base + " is-active") if langue == "en" else (base + " is-active", base)
 
 
 @app.callback(Output("btn-theme-toggle", "children"), Input("store-theme", "data"))
@@ -457,21 +459,61 @@ def basculer_mode_scan(n_path, n_upload):
 
 
 # =========================
-# 10. CALLBACK — réception des fichiers uploadés (stockage en mémoire avant lancement)
+# 10. CALLBACK — injecte le composant du.Upload une fois le session_id connu
+#     L'upload_id DOIT être fixé à la création du composant (pas modifiable après),
+#     donc on ne peut pas le mettre en dur dans le layout statique : on le génère
+#     dynamiquement dès que store-session-id a une valeur.
 # =========================
 
 @app.callback(
-    Output("store-upload-data", "data"),
-    Output("upload-fichiers-resume", "children"),
-    Input("upload-dossier", "contents"),
-    Input("upload-dossier", "filename"),
-    prevent_initial_call=True,
+    Output("conteneur-du-upload", "children"),
+    Input("store-session-id", "data"),
 )
-def reception_upload(contenus, noms):
-    if not contenus:
-        return no_update, no_update
-    resume = f"{len(noms)} fichier(s) sélectionné(s)"
-    return {"contenus": contenus, "noms": noms}, resume
+def injecter_composant_upload(session_id):
+    if not session_id:
+        return no_update
+    # ── Pourquoi on impose un .zip plutôt qu'un upload multi-fichiers libre ──
+    # La documentation officielle de dash-uploader confirme que lors d'un upload de
+    # dossier, les sous-dossiers ne sont PAS recréés côté serveur : tous les fichiers
+    # atterrissent à plat. Pour préserver l'arborescence (indispensable à l'étape 5,
+    # qui déduit dépôt/unité/propriétaire des segments du chemin), on suit donc la
+    # recommandation de la doc elle-même : "force usage of zip files and keep
+    # max_files = 1". L'utilisateur zippe son dossier, on le dézippe nous-mêmes
+    # côté serveur en préservant la structure (voir fin_upload ci-dessous).
+    return du.Upload(
+        id="du-upload-dossier",
+        upload_id=session_id,       # isole les fichiers de cet utilisateur dans sessions/_uploads_bruts/<session_id>/
+        max_files=1,                  # un seul fichier accepté : l'archive zip du dossier
+        filetypes=["zip"],            # n'accepte que les archives .zip
+        text="",                      # le texte affiché est géré par notre propre CSS/traduction autour du composant
+        className="upload-zone",
+    )
+
+
+# =========================
+# 10bis. CALLBACK dash-uploader — se déclenche automatiquement quand l'upload
+#        (un ou plusieurs fichiers, voire un dossier glissé-déposé) est terminé.
+#        Reçoit un objet du.UploadStatus, pas une liste de noms comme dcc.Upload.
+# =========================
+
+@du.callback(
+    output=Output("upload-fichiers-resume", "children"),
+    id="du-upload-dossier",
+)
+def fin_upload(status: du.UploadStatus):
+    if not status.is_completed:
+        return no_update
+
+    chemin_zip = status.latest_file  # objet pathlib.Path vers l'archive .zip uploadée
+
+    try:
+        nb_fichiers, taille_mb = extraire_zip_uploade(chemin_zip)
+    except ValueError as exc:
+        return f"⚠️ {exc}"
+    except Exception as exc:
+        return f"⚠️ Erreur lors de l'extraction de l'archive : {exc}"
+
+    return f"✅ Archive extraite : {nb_fichiers} fichier(s), {taille_mb:.1f} Mo"
 
 
 # =========================
@@ -488,7 +530,7 @@ def reception_upload(contenus, noms):
     state=[
         State("store-mode-scan", "data"),
         State("input-scan-path", "value"),
-        State("store-upload-data", "data"),
+        State("du-upload-dossier", "isCompleted"),
         State("store-session-id", "data"),
         State("store-langue", "data"),
     ],
@@ -504,7 +546,7 @@ def reception_upload(contenus, noms):
     ],
     prevent_initial_call=True,
 )
-def lancer_pipeline(set_progress, n_clicks, mode, chemin_saisi, upload_data, session_id, langue):
+def lancer_pipeline(set_progress, n_clicks, mode, chemin_saisi, upload_termine, session_id, langue):
     if not session_id:
         session_id = str(uuid.uuid4())
 
@@ -518,9 +560,14 @@ def lancer_pipeline(set_progress, n_clicks, mode, chemin_saisi, upload_data, ses
 
     # ── Résolution du dossier à scanner selon le mode actif ──────────────
     if mode == "upload":
-        if not upload_data or not upload_data.get("contenus"):
+        if not upload_termine:
             return {"display": "none"}, False, t("scan_error_no_upload", langue)
-        dossier_cible = preparer_dossier_depuis_upload(session_id, upload_data["contenus"], upload_data["noms"])
+        # dash-uploader a déjà écrit les fichiers sur disque dans son propre dossier
+        # (UPLOAD_FOLDER_ROOT/<session_id>/), arborescence de sous-dossiers comprise.
+        # On le pointe directement, aucune reconstruction manuelle n'est nécessaire.
+        dossier_cible = preparer_dossier_depuis_upload_dashuploader(UPLOAD_FOLDER_ROOT, session_id)
+        if dossier_cible is None:
+            return {"display": "none"}, False, t("scan_error_no_upload", langue)
     else:
         if not chemin_saisi or not chemin_saisi.strip():
             return {"display": "none"}, False, t("scan_error_no_path", langue)
@@ -546,7 +593,7 @@ def lancer_pipeline(set_progress, n_clicks, mode, chemin_saisi, upload_data, ses
     Output("titre-scan", "children"), Output("sous-titre-scan", "children"),
     Output("txt-mode-path", "children"), Output("txt-mode-upload", "children"),
     Output("lbl-scan-path", "children"), Output("input-scan-path", "placeholder"), Output("txt-scan-path-hint", "children"),
-    Output("txt-upload-zone", "children"), Output("txt-upload-hint", "children"),
+    Output("txt-upload-hint", "children"),
     Output("btn-lancer-scan", "children"),
     Output("lbl-filter-depot", "children"), Output("filtre-depot", "placeholder"),
     Output("lbl-filter-unite", "children"), Output("filtre-unite", "placeholder"),
@@ -593,7 +640,7 @@ def rafraichir_interface(langue, theme, depot, unite, type_dup, pipeline_termine
         t("scan_section_title", langue), t("scan_section_subtitle", langue),
         t("scan_mode_path", langue), t("scan_mode_upload", langue),
         t("scan_path_label", langue), t("scan_path_placeholder", langue), t("scan_path_hint", langue),
-        t("scan_upload_text", langue), t("scan_upload_hint", langue),
+        t("scan_upload_hint", langue),
         t("scan_btn_relaunch", langue) if pipeline_termine else t("scan_btn_launch", langue),
         t("filter_depot", langue), t("filter_depot_all", langue),
         t("filter_unite", langue), t("filter_unite_all", langue),
